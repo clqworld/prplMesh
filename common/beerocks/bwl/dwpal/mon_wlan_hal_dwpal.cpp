@@ -1058,8 +1058,7 @@ bool mon_wlan_hal_dwpal::process_dwpal_nl_event(struct nl_msg *msg)
 
     if ((tb[NL80211_ATTR_IFINDEX] == NULL) ||
         (if_indextoname(nla_get_u32(tb[NL80211_ATTR_IFINDEX]), ifname) == NULL)) {
-        LOG(ERROR) << __func__ << " failed to get ifname";
-        return false;
+        LOG(WARNING) << __func__ << " failed to get ifname for nl_event=" << int(gnlh->cmd);
     }
 
     auto event = dwpal_nl_to_bwl_event(gnlh->cmd);

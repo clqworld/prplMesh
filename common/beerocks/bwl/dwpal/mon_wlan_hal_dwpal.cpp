@@ -787,49 +787,58 @@ bool mon_wlan_hal_dwpal::channel_scan_trigger(int dwell_time_msec,
     LOG(DEBUG) << "Channel scan trigger received on interface=" << m_radio_info.iface_name;
 
     //build scan parameters
+    bool is_scan_param_accessible  = true;
     ScanParams channel_scan_params = {0};
     sScanCfgParams org_fg, new_fg;   //foreground scan param
     sScanCfgParamsBG org_bg, new_bg; //background scan param
 
     // get original scan params
     if (!dwpal_get_scan_params_fg(org_fg) || !dwpal_get_scan_params_bg(org_bg)) {
-        LOG(ERROR) << "Failed getting original scan parameters";
-        return false;
+        LOG(ERROR) << "Failed getting original scan parameters skipping scan parameters change";
+        is_scan_param_accessible = false;
     }
 
-    // prepare new scan params with changed dwell time
-    new_fg                    = org_fg;
-    new_bg                    = org_bg;
-    new_fg.passive_dwell_time = dwell_time_msec;
-    new_fg.active_dwell_time  = dwell_time_msec;
-    new_bg.passive_dwell_time = dwell_time_msec;
-    new_bg.active_dwell_time  = dwell_time_msec;
+    if (is_scan_param_accessible) {
+        // prepare new scan params with changed dwell time
+        new_fg                    = org_fg;
+        new_bg                    = org_bg;
+        new_fg.passive_dwell_time = dwell_time_msec;
+        new_fg.active_dwell_time  = dwell_time_msec;
+        new_bg.passive_dwell_time = dwell_time_msec;
+        new_bg.active_dwell_time  = dwell_time_msec;
 
-    // set new scan params & get newly set values for validation
-    if (!dwpal_set_scan_params_fg(new_fg) || !dwpal_set_scan_params_bg(new_bg)) {
-        LOG(ERROR) << "Failed setting new values, restoring original scan parameters";
-        dwpal_set_scan_params_fg(org_fg);
-        dwpal_set_scan_params_bg(org_bg);
-        return false;
+        // set new scan params & get newly set values for validation
+        if (!dwpal_set_scan_params_fg(new_fg) || !dwpal_set_scan_params_bg(new_bg))
+            {
+                LOG(ERROR) << "Failed setting new values, restoring original scan parameters";
+                dwpal_set_scan_params_fg(org_fg);
+                dwpal_set_scan_params_bg(org_bg);
+                return false;
+            }
     }
 
-    if (!dwpal_get_scan_params_fg(new_fg) || !dwpal_get_scan_params_bg(new_bg) ||
-        (new_fg.active_dwell_time != dwell_time_msec) ||
-        (new_fg.passive_dwell_time != dwell_time_msec) ||
-        (new_bg.active_dwell_time != dwell_time_msec) ||
-        (new_bg.passive_dwell_time != dwell_time_msec)) {
-        LOG(ERROR) << "Validation failed, restoring original scan parameters";
-        dwpal_set_scan_params_fg(org_fg);
-        dwpal_set_scan_params_bg(org_bg);
-        return false;
+    if (is_scan_param_accessible) {
+        if (!dwpal_get_scan_params_fg(new_fg) || !dwpal_get_scan_params_bg(new_bg) ||
+            (new_fg.active_dwell_time != dwell_time_msec) ||
+            (new_fg.passive_dwell_time != dwell_time_msec) ||
+            (new_bg.active_dwell_time != dwell_time_msec) ||
+            (new_bg.passive_dwell_time != dwell_time_msec))
+            {
+                LOG(ERROR) << "Validation failed, restoring original scan parameters";
+                dwpal_set_scan_params_fg(org_fg);
+                dwpal_set_scan_params_bg(org_bg);
+                return false;
+            }
     }
 
     // get frequencies from channel pool and set in scan_params
     if (!dwpal_get_channel_scan_freq(channel_pool, m_radio_info.channel, m_radio_info.iface_name,
                                      channel_scan_params)) {
         LOG(ERROR) << "Failed getting frequencies, restoring original scan parameters";
-        dwpal_set_scan_params_fg(org_fg);
-        dwpal_set_scan_params_bg(org_bg);
+        if (is_scan_param_accessible) {
+            dwpal_set_scan_params_fg(org_fg);
+            dwpal_set_scan_params_bg(org_bg);
+        }
         return false;
     }
 
@@ -839,8 +848,10 @@ bool mon_wlan_hal_dwpal::channel_scan_trigger(int dwell_time_msec,
     if (dwpal_driver_nl_scan_trigger(get_dwpal_nl_ctx(), (char *)m_radio_info.iface_name.c_str(),
                                      &channel_scan_params) != DWPAL_SUCCESS) {
         LOG(ERROR) << " scan trigger failed! Abort scan, restoring original scan parameters";
-        dwpal_set_scan_params_fg(org_fg);
-        dwpal_set_scan_params_bg(org_bg);
+        if (is_scan_param_accessible) {
+            dwpal_set_scan_params_fg(org_fg);
+            dwpal_set_scan_params_bg(org_bg);
+        }
         return false;
     }
 
@@ -849,17 +860,22 @@ bool mon_wlan_hal_dwpal::channel_scan_trigger(int dwell_time_msec,
     // so we have to change and restore driver scan parameters on the fly.
     // no reason to check since we restore the original params here anyway
     // and the next validation will validate the change.
-    dwpal_set_scan_params_fg(org_fg);
-    dwpal_set_scan_params_bg(org_bg);
+    if (is_scan_param_accessible) {
+        dwpal_set_scan_params_fg(org_fg);
+        dwpal_set_scan_params_bg(org_bg);
+    }
 
     // validate if "set" function to original values worked
-    if (!dwpal_get_scan_params_fg(new_fg) || !dwpal_get_scan_params_bg(new_bg) ||
-        (new_fg.active_dwell_time != org_fg.active_dwell_time) ||
-        (new_fg.passive_dwell_time != org_fg.passive_dwell_time) ||
-        (new_bg.active_dwell_time != org_bg.active_dwell_time) ||
-        (new_bg.passive_dwell_time != org_bg.passive_dwell_time)) {
-        LOG(ERROR) << "Validation failed, original scan parameters were not restored";
-        return false;
+    if (is_scan_param_accessible) {
+        if (!dwpal_get_scan_params_fg(new_fg) || !dwpal_get_scan_params_bg(new_bg) ||
+            (new_fg.active_dwell_time != org_fg.active_dwell_time) ||
+            (new_fg.passive_dwell_time != org_fg.passive_dwell_time) ||
+            (new_bg.active_dwell_time != org_bg.active_dwell_time) ||
+            (new_bg.passive_dwell_time != org_bg.passive_dwell_time))
+            {
+                LOG(ERROR) << "Validation failed, original scan parameters were not restored";
+                return false;
+            }
     }
 
     return true;

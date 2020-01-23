@@ -1054,7 +1054,7 @@ int bml_internal::process_cmdu_header(std::shared_ptr<beerocks_header> beerocks_
             //Signal any waiting threads
             if (!wake_up(beerocks_message::ACTION_BML_CHANNEL_SCAN_START_SCAN_REQUEST,
                          response->op_error_code())) {
-                LOG(WARNING) << "Received ACTION_BML_CHANNEL_SCAN_START_SCAN_REQUEST"
+                LOG(WARNING) << "Received ACTION_BML_CHANNEL_SCAN_START_SCAN_RESPONSE"
                              << " response, but no one is waiting...";
             }
         } break;

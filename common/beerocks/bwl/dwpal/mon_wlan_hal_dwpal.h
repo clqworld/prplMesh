@@ -59,12 +59,13 @@ private:
     bool dwpal_get_scan_params_fg(sScanCfgParams &params)
     {
         const size_t expected_result_size = sizeof(params) + NL_ATTR_HDR;
+        size_t received_result_size = 0;
 
-        if (expected_result_size != dwpal_nl_cmd_get(m_radio_info.iface_name,
+        if (expected_result_size != (received_result_size = dwpal_nl_cmd_get(m_radio_info.iface_name,
                                                      LTQ_NL80211_VENDOR_SUBCMD_GET_SCAN_PARAMS,
-                                                     m_nl_buffer, NL_MAX_REPLY_BUFFSIZE)) {
+                                                      m_nl_buffer, NL_MAX_REPLY_BUFFSIZE))) {
             LOG(ERROR) << "LTQ_NL80211_VENDOR_SUBCMD_GET_SCAN_PARAMS failed! returned size does "
-                          "not match sScanCfgParams!";
+                          "not match sScanCfgParams!, expected_result_size(" << expected_result_size << ") != received_result_size(" << received_result_size << ")";
             return false;
         }
         std::copy_n(&m_nl_buffer[NL_ATTR_HDR], sizeof(params),
@@ -75,12 +76,13 @@ private:
     bool dwpal_get_scan_params_bg(sScanCfgParamsBG &params)
     {
         const size_t expected_result_size = sizeof(params) + NL_ATTR_HDR;
+        size_t received_result_size = 0;
 
-        if (expected_result_size != dwpal_nl_cmd_get(m_radio_info.iface_name,
+        if (expected_result_size != (received_result_size = dwpal_nl_cmd_get(m_radio_info.iface_name,
                                                      LTQ_NL80211_VENDOR_SUBCMD_GET_SCAN_PARAMS_BG,
-                                                     m_nl_buffer, NL_MAX_REPLY_BUFFSIZE)) {
+                                                     m_nl_buffer, NL_MAX_REPLY_BUFFSIZE))) {
             LOG(ERROR) << "LTQ_NL80211_VENDOR_SUBCMD_GET_SCAN_PARAMS_BG failed! returned size does "
-                          "not match sScanCfgParamsBG!";
+                          "not match sScanCfgParamsBG!, expected_result_size(" << expected_result_size << ") != received_result_size(" << received_result_size << ")";
             return false;
         }
         std::copy_n(&m_nl_buffer[NL_ATTR_HDR], sizeof(params),

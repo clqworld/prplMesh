@@ -1096,13 +1096,8 @@ bool mon_wlan_hal_dwpal::process_dwpal_nl_event(struct nl_msg *msg)
     case Event::Channel_Scan_Dump_Result: {
         if (m_radio_info.iface_name.compare(ifname) != 0) {
             // ifname doesn't match current interface
-            // meaning the event was recevied for a diffrent channel
+            // meaning the event was received for a diffrent channel
             return true;
-        }
-
-        if (nlh->nlmsg_seq == 0) {
-            LOG(ERROR) << "Invalid! nl message seq cannot be 0";
-            return false;
         }
 
         // We need to distinguish 1st dump event that cannot be parsed
@@ -1110,12 +1105,19 @@ bool mon_wlan_hal_dwpal::process_dwpal_nl_event(struct nl_msg *msg)
         // 1st event "empty dump result" need to send back scan dump request.
         // rest of events are the actual scan dumps that need to be parsed.
         if (m_nl_seq == 0) {
-            LOG(DEBUG) << "Results dump are ready with sequence number: " << (int)nlh->nlmsg_seq;
-            m_nl_seq = nlh->nlmsg_seq;
-            event_queue_push(Event::Channel_Scan_New_Results_Ready);
-            channel_scan_dump_results();
-        } else if (m_nl_seq == nlh->nlmsg_seq) {
-            LOG(DEBUG) << "DWPAL NL event channel scan results dump";
+            if (nlh->nlmsg_seq == 0) {
+                LOG(DEBUG) << "Results dump are ready";
+                event_queue_push(Event::Channel_Scan_New_Results_Ready);
+                channel_scan_dump_results();
+                return true;
+            } else {
+                LOG(DEBUG) << "Results dump new sequence:" << int(nlh->nlmsg_seq);
+                m_nl_seq = nlh->nlmsg_seq;
+            }
+        }
+
+        if (m_nl_seq == nlh->nlmsg_seq) {
+            LOG(DEBUG) << "DWPAL NL event channel scan results dump, seq=" << int(nlh->nlmsg_seq);
 
             auto results_buff = ALLOC_SMART_BUFFER(sizeof(sCHANNEL_SCAN_RESULTS_NOTIFICATION));
             auto results =
@@ -1134,7 +1136,7 @@ bool mon_wlan_hal_dwpal::process_dwpal_nl_event(struct nl_msg *msg)
             LOG(DEBUG) << "Processing results for BSSID:" << results->channel_scan_results.bssid;
             event_queue_push(event, results_buff);
         } else {
-            LOG(ERROR) << "channel scan results dump recieved with unexpected seq number";
+            LOG(ERROR) << "channel scan results dump received with unexpected seq number";
             return false;
         }
         break;

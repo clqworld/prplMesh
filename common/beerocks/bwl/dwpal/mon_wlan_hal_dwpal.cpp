@@ -1111,7 +1111,7 @@ bool mon_wlan_hal_dwpal::process_dwpal_nl_event(struct nl_msg *msg)
                 return false;
             }
             // Initialize the message
-            results_buff = {};
+            *results = {};
 
             if (!get_scan_results_from_nl_msg(results->channel_scan_results, msg)) {
                 LOG(ERROR) << "read NL msg to monitor msg failed!";

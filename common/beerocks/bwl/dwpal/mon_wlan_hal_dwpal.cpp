@@ -361,8 +361,8 @@ static bool translate_nl_data_to_bwl_results(sChannelScanResults &results,
                                              const struct nlattr **bss)
 {
     //get bssid
-    std::copy_n(results.bssid.oct, sizeof(results.bssid.oct),
-                (unsigned char *)nla_data(bss[NL80211_BSS_BSSID]));
+    std::copy_n((unsigned char *)nla_data(bss[NL80211_BSS_BSSID]),
+                sizeof(results.bssid), results.bssid.oct);
 
     //get channel and operating frequency band
     if (bss[NL80211_BSS_FREQUENCY]) {

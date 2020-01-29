@@ -656,15 +656,18 @@ size_t base_wlan_hal_dwpal::dwpal_nl_cmd_get(const std::string &ifname, unsigned
                             unsigned char *data) -> DWPAL_Ret {
         return nl_handler_cb_wrapper(ifname, event, subevent, len, data);
     };
-
-    //parsing will be done in callback func
-    if (dwpal_driver_nl_msg_get(m_dwpal_nl_ctx, DWPAL_NL_SOLICITED_EVENT, nl_handler_cb, NULL) ==
-        DWPAL_FAILURE) {
-        LOG(ERROR) << " dwpal_driver_nl_msg_get failed,"
-                   << " ctx=" << m_dwpal_nl_ctx;
-        return data_size;
+    
+    // This is a blocking function so we need
+    // to wait for reply with valid data.
+    while (data_size == 0) {
+        //parsing will be done in callback func
+        if (dwpal_driver_nl_msg_get(m_dwpal_nl_ctx, DWPAL_NL_SOLICITED_EVENT, nl_handler_cb,
+                                    NULL) == DWPAL_FAILURE) {
+            LOG(ERROR) << " dwpal_driver_nl_msg_get failed,"
+                       << " ctx=" << m_dwpal_nl_ctx;
+            return data_size;
+        }
     }
-
     return data_size;
 }
 

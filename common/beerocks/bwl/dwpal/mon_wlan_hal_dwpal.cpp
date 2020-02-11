@@ -145,6 +145,8 @@ static bool read_nl_data_from_msg(struct nlattr **bss, struct nl_msg *msg)
     struct nlattr *tb[NL80211_ATTR_MAX + 1];
     static struct nla_policy bss_policy[NL80211_BSS_MAX + 1];
 
+    LOG(DEBUG) << "Entered read_nl_data_from_msg";
+
     if (!bss || !msg) {
         LOG(ERROR) << "invalid input bss=" << bss << ", msg=" << msg;
         return false;
@@ -240,6 +242,7 @@ static void get_supprates(const uint8_t *data, uint8_t len, sChannelScanResults 
         return;
     }
 
+    LOG(DEBUG) << "entering get_supprates";
     for (int i = 0; i < len; i++) {
         rate_mbs_fp_8_1 = data[i] & 0x7f;
 
@@ -254,6 +257,8 @@ static void get_supprates(const uint8_t *data, uint8_t len, sChannelScanResults 
                 results.operating_standards = eStandard_802_11a;
             }
         }
+
+        LOG(DEBUG) << "entering get_supprates";
 
         /**
          * rate_mbs_fp_8_1 is tx data rate in mbps 
@@ -277,10 +282,12 @@ static void parse_info_elements(unsigned char *ie, int ielen, sChannelScanResult
         return;
     }
 
+    LOG(DEBUG) << "Entered parse_info_elements";
     while (ielen >= 2 && ielen >= ie[1]) {
         auto key      = ie[0];
         auto length   = ie[1];
         uint8_t *data = ie + 2;
+        LOG(DEBUG) << "parse TYPE num = " << (int)key;
 
         switch (key) {
         case ie_type::TYPE_SSID: {
@@ -368,6 +375,8 @@ static bool translate_nl_data_to_bwl_results(sChannelScanResults &results,
     std::copy_n(reinterpret_cast<unsigned char *>(nla_data(bss[NL80211_BSS_BSSID])),
                 sizeof(results.bssid), results.bssid.oct);
 
+    LOG(DEBUG) << "Entered translate_nl_data_to_bwl_results bssid = " << results.bssid;
+
     //get channel and operating frequency band
     if (bss[NL80211_BSS_FREQUENCY]) {
         int freq = nla_get_u32(bss[NL80211_BSS_FREQUENCY]);
@@ -398,6 +407,8 @@ static bool translate_nl_data_to_bwl_results(sChannelScanResults &results,
                                          : NL80211_BSS_BEACON_IES;
         parse_info_elements((unsigned char *)nla_data(bss[ies_index]), nla_len(bss[ies_index]),
                             results);
+
+        LOG(DEBUG) << "Exited parse_info_elements";
     }
 
     //get capabilities: mode, security_mode_enabled
@@ -425,25 +436,29 @@ static bool translate_nl_data_to_bwl_results(sChannelScanResults &results,
 static bool get_scan_results_from_nl_msg(sChannelScanResults &results, struct nl_msg *msg)
 {
     struct nlattr *bss[NL80211_BSS_MAX + 1];
+    LOG(DEBUG) << "Entered get_scan_results_from_nl_msg";
 
     if (!msg) {
         LOG(ERROR) << "invalid input: msg==NULL" << msg;
         return false;
     }
 
-    //prepare results
-    results = {'\0'};
+    //prepare results  //todo find for what is it used
+    //results = {'\0'};
 
     //read msg buffer into nl attributes struct
     if (!read_nl_data_from_msg(bss, msg)) {
         LOG(ERROR) << "failed to parse netlink message";
         return false;
     }
+    LOG(DEBUG) << "Exited read_nl_data_from_msg";
 
     if (!translate_nl_data_to_bwl_results(results, (const nlattr **)bss)) {
         LOG(ERROR) << "failed to translate nl data to BWL results";
         return false;
     }
+
+    LOG(DEBUG) << "Exited translate_nl_data_to_bwl_results";
 
     return true;
 }
@@ -1107,22 +1122,27 @@ bool mon_wlan_hal_dwpal::process_dwpal_nl_event(struct nl_msg *msg)
         if (m_nl_seq == nlh->nlmsg_seq) {
             LOG(DEBUG) << "DWPAL NL event channel scan results dump, seq = " << int(nlh->nlmsg_seq);
 
-            auto results_buff = ALLOC_SMART_BUFFER(sizeof(sCHANNEL_SCAN_RESULTS_NOTIFICATION));
-            auto results =
-                reinterpret_cast<sCHANNEL_SCAN_RESULTS_NOTIFICATION *>(results_buff.get());
-            if (!results) {
-                LOG(FATAL) << "Memory allocation failed!";
-                return false;
-            }
+            // auto results_buff = ALLOC_SMART_BUFFER(sizeof(sCHANNEL_SCAN_RESULTS_NOTIFICATION));
+            // auto results =
+            //     reinterpret_cast<sCHANNEL_SCAN_RESULTS_NOTIFICATION *>(results_buff.get());
+            // if (!results) {
+            //     LOG(FATAL) << "Memory allocation failed!";
+            //     return false;
+            // }
+            auto results = std::make_shared<sCHANNEL_SCAN_RESULTS_NOTIFICATION>();
             // Initialize the message
-            *results = {};
+            // *results = {};
+            // memset(results_buff.get(), 0, sizeof(sCHANNEL_SCAN_RESULTS_NOTIFICATION));
+            // results->channel_scan_results.struct_init();
+            LOG(DEBUG) << "print results beacon_period_ms = " << results->channel_scan_results.beacon_period_ms
+                       << "bssid" << results->channel_scan_results.bssid;
 
             if (!get_scan_results_from_nl_msg(results->channel_scan_results, msg)) {
                 LOG(ERROR) << "read NL msg to monitor msg failed!";
                 return false;
             }
             LOG(DEBUG) << "Processing results for BSSID:" << results->channel_scan_results.bssid;
-            event_queue_push(event, results_buff);
+            event_queue_push(event, results);
         } else {
             LOG(ERROR) << "channel scan results dump received with unexpected seq number";
             return false;

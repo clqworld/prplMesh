@@ -2046,8 +2046,8 @@ int cli_bml::get_dcs_scan_results(const std::string &radio_mac, uint32_t max_res
                           << "  operating_standards=" << int(res.ap_OperatingStandards) << std::endl
                           << "  operating_channel_bandwidth="
                           << int(res.ap_OperatingChannelBandwidth) << std::endl
-                          << "  beacon_period_ms=" << (int)res.ap_BeaconPeriod << std::endl
-                          << "  noise_dbm=" << (int)res.ap_Noise << std::endl
+                          << "  beacon_period_ms=" << int(res.ap_BeaconPeriod) << std::endl
+                          << "  noise_dbm=" << int(res.ap_Noise) << std::endl
                           << "  basic_data_transfer_rates_kbps="
                           << string_from_int_array(res.ap_BasicDataTransferRates,
                                                    BML_CHANNEL_SCAN_ENUM_LIST_SIZE)
@@ -2056,8 +2056,8 @@ int cli_bml::get_dcs_scan_results(const std::string &radio_mac, uint32_t max_res
                           << string_from_int_array(res.ap_SupportedDataTransferRates,
                                                    BML_CHANNEL_SCAN_ENUM_LIST_SIZE)
                           << std::endl
-                          << "  dtim_period=" << (int)res.ap_DTIMPeriod << std::endl
-                          << "  channel_utilization=" << (int)res.ap_ChannelUtilization
+                          << "  dtim_period=" << int(res.ap_DTIMPeriod) << std::endl
+                          << "  channel_utilization=" << int(res.ap_ChannelUtilization)
                           << std::endl;
             }
         }

@@ -2067,23 +2067,13 @@ int cli_bml::get_dcs_scan_results(const std::string &radio_mac, uint32_t max_res
     return 0;
 }
 
-const std::string cli_bml::string_from_int_array(uint8_t *arr, size_t arr_max_size)
+template <typename T>
+const std::string cli_bml::string_from_int_array(T *arr, size_t arr_max_size)
 {
     std::stringstream ss;
     if (arr) {
         for (size_t i = 0; i < arr_max_size; i++) {
-            ss << ((i != 0) ? ", " : "") << static_cast<int>(arr[i]);
-        }
-    }
-    return ss.str();
-}
-
-const std::string cli_bml::string_from_int_array(uint32_t *arr, size_t arr_max_size)
-{
-    std::stringstream ss;
-    if (arr) {
-        for (size_t i = 0; i < arr_max_size; i++) {
-            ss << ((i != 0) ? ", " : "") << static_cast<int>(arr[i]);
+            ss << ((i != 0) ? ", " : "") << unsigned int(arr[i]);
         }
     }
     return ss.str();

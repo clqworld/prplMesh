@@ -2073,7 +2073,7 @@ const std::string cli_bml::string_from_int_array(T *arr, size_t arr_max_size)
     std::stringstream ss;
     if (arr) {
         for (size_t i = 0; i < arr_max_size; i++) {
-            ss << ((i != 0) ? ", " : "") << unsigned int(arr[i]);
+            ss << ((i != 0) ? ", " : "") << (unsigned int)(arr[i]);
         }
     }
     return ss.str();
